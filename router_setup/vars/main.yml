@@ -1,0 +1,23 @@
+---
+# vars file for router_setup
+     domain_name: rtk.intra.net
+     domain_router: 172.16.10.1
+     dns_server: 77.88.8.8, 77.88.8.1
+     dhcp_range_start: 172.16.10.50
+     dhcp_range_end: 172.16.10.254
+
+     dhcp_leases_file: "/var/lib/dhcpd/dhcpd.leases"
+
+     # Заранее известные MAC-адреса серверов
+     dhcp_servers_clients:
+       - name: domain-controller1
+         mac: '00:0c:29:51:48:d0'
+         ip: '172.16.10.2'
+         hostname: 'dc1.rtk.intra.net'
+
+       - name: monitoring-server1
+         mac: '00:0c:29:f0:30:64'
+         ip: '172.16.10.3'
+         hostname: 'ms1.rtk.intra.net'
+
+     dhcp_dynamic_clients: "{{ active_clients }}"

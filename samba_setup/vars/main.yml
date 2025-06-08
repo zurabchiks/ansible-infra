@@ -1,0 +1,23 @@
+---
+# Domain configuration
+domain_name: "RTK.INTRA.NET"
+domain_netbios_name: "RTK"
+domain_user: "administrator"
+domain_admin_password: "SecurePass123!"
+dns_zone: "10.16.172.in-addr.arpa"
+ptr_records:
+  - { ip: '2', fqdn: 'dc1.rtk.intra.net.' }
+  - { ip: '3', fqdn: 'ms1.rtk.intra.net.' }
+  - { ip: '50', fqdn: 'cli1.rtk.intra.net.' }
+  - { ip: '51', fqdn: 'cli2.rtk.intra.net.' }
+
+# DNS configuration
+dns_forwarder: "8.8.8.8"
+
+# Network configuration
+host_ip: "172.16.10.2"
+host_subnet: "172.16.10.0/24"
+
+# Samba configuration
+samba_realm: "{{ domain_name }}"
+samba_dns_backend: "SAMBA_INTERNAL"

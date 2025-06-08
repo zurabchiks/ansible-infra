@@ -1,0 +1,55 @@
+[global]
+    workgroup = RTK
+    realm = RTK.INTRA.NET
+    security = ADS
+    passdb backend = tdbsam
+
+    winbind enum groups = Yes
+    winbind enum users = Yes
+    winbind offline logon = Yes
+    winbind use default domain = No
+    winbind refresh tickets = Yes
+
+    idmap cache time = 900
+    idmap config * : backend = tdb
+    idmap config * : range = 10000-99999
+    idmap config RTK : backend = rid
+    idmap config RTK : range = 100000-999999
+
+    client min protocol = NT1
+    client max protocol = SMB3
+
+    dedicated keytab file = /etc/krb5.keytab
+    kerberos method = secrets and keytab
+
+    machine password timeout = 60
+    vfs objects = acl_xattr
+    map acl inherit = yes
+    store dos attributes = yes
+
+    printing = cups
+    printcap name = cups
+    load printers = yes
+    cups options = raw
+
+[homes]
+    comment = Home Directories
+    valid users = %S, %D%w%S
+    browseable = No
+    read only = No
+    inherit acls = Yes
+
+[printers]
+    comment = All Printers
+    path = /var/tmp
+    printable = Yes
+    create mask = 0600
+    browseable = No
+
+[print$]
+    comment = Printer Drivers
+    path = /var/lib/samba/drivers
+    write list = @printadmin root
+    force group = @printadmin
+    create mask = 0664
+    directory mask = 0775

@@ -1,0 +1,63 @@
+---
+- name: Ensure clean Samba environment
+  block:
+    - name: Stop Samba services
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - samba
+        - winbind
+
+    - name: Remove existing Samba configuration
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/samba/smb.conf
+        - /var/lib/samba/private/
+        - /var/lib/samba/sysvol/
+
+    - name: Create required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+      loop:
+        - /var/lib/samba/sysvol
+        - /var/lib/samba/private
+
+- name: Provision Samba AD Domain
+  command: |
+    samba-tool domain provision \
+    --use-rfc2307 \
+    --realm={{ samba_realm }} \
+    --domain={{ domain_netbios_name }} \
+    --server-role=dc \
+    --dns-backend=SAMBA_INTERNAL \
+    --adminpass={{ domain_admin_password }} \
+    --option="dns forwarder = {{ dns_forwarder }}" \
+    --option="interfaces = lo {{ host_ip }}" \
+    --option="bind interfaces only = yes"
+  register: samba_provision
+  changed_when: "'Provision OK' in samba_provision.stdout"
+  args:
+    creates: /etc/samba/smb.conf
+
+- name: Correct permissions on sysvol
+  file:
+    path: /var/lib/samba/sysvol
+    owner: root
+    group: root
+    mode: 0775
+    recurse: yes
+
+- name: Start Samba services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - samba

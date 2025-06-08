@@ -1,0 +1,98 @@
+---
+# tasks file for router_setup
+       - name: "Configuring the DHCP Server"
+         dnf:
+           name: dhcp-server
+           state: present
+
+       - name: "Creating a dhcpd.conf configuration with redundancy"
+         template:
+           src: dhcpd.conf.j2
+           dest: /etc/dhcp/dhcpd.conf
+
+       - name: "Starting the DHCP server"
+         service:
+           name: dhcpd
+           enabled: yes
+           state: restarted
+
+       - name: "Extract active DHCP leases"
+         shell:
+           grep -oP 'lease \K\d+\.\d+\.\d+\.\d+' {{ dhcp_leases_file }} | sort -u
+         register: dhcp_leases
+         changed_when: false
+
+       - name: "Check host availability (ping)"
+         command: ping -c 1 -W 1 "{{ item }}"
+         loop: "{{ dhcp_leases.stdout_lines }}"
+         register: ping_results
+         ignore_errors: yes
+         changed_when: false
+
+       - name: "Create client host list"
+         set_fact:
+           active_clients: |
+             {{
+               ping_results.results |
+               selectattr("rc", "equalto", 0) |
+               map(attribute="item") |
+               list
+             }}
+
+       - name: "Generating inventory.ini"
+         template:
+           src: inventory.ini.j2
+           dest: ./inventory.ini
+
+       - name: "Installing the necessary packages"
+         dnf:
+           name:
+             - iptables
+             - iptables-services
+           state: present
+
+       - name: "Enabling IP forwarding"
+         sysctl:
+           name: net.ipv4.ip_forward
+           value: '1'
+           state: present
+           reload: yes
+
+       - name: "Configuring iptables NAT and forwarding"
+         shell: |
+           iptables -F
+           iptables -t nat -F
+           iptables -A FORWARD -i ens35 -o ens34 -j ACCEPT
+           iptables -A FORWARD -i ens34 -o ens35 -m state --state
+           ESTABLISHED,RELATED -j ACCEPT
+           iptables -t nat -A POSTROUTING -o ens34 -j MASQUERADE
+           iptables -A INPUT -p udp --dport 53 -j ACCEPT
+           iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+           iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+           iptables -A INPUT -p tcp --dport 445 -j ACCEPT
+           iptables -A INPUT -p tcp --dport 139 -j ACCEPT
+           iptables -A INPUT -p udp --dport 137 -j ACCEPT
+           iptables -A INPUT -p udp --dport 138 -j ACCEPT
+           iptables -A INPUT -p icmp -j ACCEPT
+           iptables -A OUTPUT -d vk.com -j REJECT
+           iptables -A OUTPUT -d www.vk.com -j REJECT
+           iptables -A OUTPUT -d m.vk.com -j REJECT
+           iptables -A OUTPUT -d api.vk.com -j REJECT
+           iptables -A OUTPUT -d vk.me -j REJECT
+           iptables -A OUTPUT -d m.vk.me -j REJECT
+           iptables -A OUTPUT -d api.vk.me -j REJECT
+           iptables -A OUTPUT -d 87.250.250.0/24 -j REJECT
+           iptables -A OUTPUT -d 5.255.255.0/24 -j REJECT
+           iptables -A OUTPUT -d 31.131.0.0/16 -j REJECT
+           iptables -I OUTPUT -m string --string "vk.com" --algo bm -j REJECT
+           iptables -I FORWARD -d vk.com -j REJECT
+           iptables -p INPUT ACCEPT
+           iptables -p FORWARD ACCEPT
+           iptables -p OUTPUT ACCEPT
+           service iptables save
+
+       - name: "Starting iptables"
+         service:
+           name: iptables
+           enabled: yes
+           state: restarted

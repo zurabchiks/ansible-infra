@@ -1,0 +1,73 @@
+- name: Install Node Exporter from source
+  block:
+    - name: Create node_exporter user
+      user:
+        name: nodeusr
+        system: yes
+        shell: /bin/false
+        create_home: no
+        state: present
+
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        checksum: "sha256:{{ node_exporter_checksum }}"
+        timeout: 30
+
+    - name: Create installation directory
+      file:
+        path: "/opt/node_exporter-{{ node_exporter_version }}"
+        state: directory
+        mode: 0755
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        dest: "/opt/node_exporter-{{ node_exporter_version }}"
+        remote_src: yes
+        extra_opts: ["--strip-components=1"]
+        creates: "/opt/node_exporter-{{ node_exporter_version }}/node_exporter"
+
+    - name: Install Node Exporter binary
+      copy:
+        remote_src: yes
+        src: "/opt/node_exporter-{{ node_exporter_version }}/node_exporter"
+        dest: "/usr/bin/node_exporter"
+        owner: nodeusr
+        group: nodeusr
+        mode: "0755"
+
+    - name: Configure SELinux context
+      sefcontext:
+        target: "/usr/bin/node_exporter"
+        setype: "bin_t"
+      register: selinux_context
+      when: ansible_selinux.status == "enabled"
+
+    - name: Apply SELinux context changes
+      command: restorecon -v /usr/bin/node_exporter
+      when: selinux_context is changed and ansible_selinux.status == "enabled"
+
+    - name: Create systemd service unit
+      template:
+        src: node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+        mode: 0644
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Node Exporter service
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
+    - name: Cleanup temporary files
+      file:
+        path: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        state: absent
+
+  when: node_exporter_install_method == 'source'

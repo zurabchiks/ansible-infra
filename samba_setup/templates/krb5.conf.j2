@@ -1,0 +1,18 @@
+[libdefaults]
+    default_realm = {{ samba_realm }}
+    dns_lookup_realm = true
+    dns_lookup_kdc = true
+    ticket_lifetime = 24h
+    renew_lifetime = 7d
+    forwardable = true
+    rdns = false
+
+[realms]
+    {{ samba_realm }} = {
+        kdc = {{ ansible_hostname }}.{{ domain_name|lower }}
+        admin_server = {{ ansible_hostname }}.{{ domain_name|lower }}
+    }
+
+[domain_realm]
+    .{{ domain_name|lower }} = {{ samba_realm }}
+    {{ domain_name|lower }} = {{ samba_realm }}

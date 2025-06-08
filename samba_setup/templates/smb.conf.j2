@@ -1,0 +1,25 @@
+[global]
+        workgroup = {{ domain_netbios_name }}
+        realm = {{ samba_realm }}
+        netbios name = {{ ansible_hostname }}
+        server role = active directory domain controller
+        dns backend = SAMBA_INTERNAL
+        dns forwarder = {{ dns_forwarder }}
+        idmap_ldb:use rfc2307 = yes
+
+        log level = 1
+        log file = /var/log/samba/log.%m
+        max log size = 50
+
+        # Security
+        tls enabled = yes
+        template shell = /bin/bash
+        template homedir = /home/%U
+
+[netlogon]
+        path = /var/lib/samba/sysvol/{{ domain_name|lower }}/scripts
+        read only = No
+
+[sysvol]
+        path = /var/lib/samba/sysvol
+        read only = No

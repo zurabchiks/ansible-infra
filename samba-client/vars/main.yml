@@ -1,0 +1,5 @@
+---
+# Общие переменные для samba-setup и samba-client
+ domain_name: RTK.INTRA.NET
+ domain_user: administrator
+ domain_pass: SecurePass123!

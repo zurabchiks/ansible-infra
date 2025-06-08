@@ -1,0 +1,15 @@
+[router]
+localhost ansible_connection=local
+
+[servers]
+{% for h in dhcp_servers_clients %}
+{{ h.ip }} ansible_user=ansible
+{% endfor %}
+
+[clients]
+{% for ip in active_clients %}
+{{ ip }} ansible_user=ansible
+{% endfor %}
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

@@ -1,0 +1,15 @@
+---
+- name: Include installation tasks
+  include_tasks: install.yml
+
+- name: Include configuration tasks
+  include_tasks: configure.yml
+
+- name: Include domain setup tasks
+  include_tasks: setup_domain.yml
+
+- name: Include user create tasks
+  include_tasks: user_creator.yml
+
+- name: Include create zones tasks
+  include_tasks: create_zones.yml

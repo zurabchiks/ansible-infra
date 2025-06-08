@@ -1,0 +1,50 @@
+---
+  - name: "Initial configuration of the router"
+    hosts: router
+    gather_facts: yes
+    roles:
+            - router_setup
+    tags: router_conf
+
+  - name: "Configuring SAMBA DC"
+    hosts: 172.16.10.2
+    become: yes
+    gather_facts: yes
+    roles:
+            - samba_setup
+    tags: infra_setup
+
+  - name: "Reconfiguring the router"
+    hosts: router
+    gather_facts: yes
+    roles:
+            - router_fix
+    tags: infra_setup
+
+  - name: "Adding clients to RTK.INTRA.NET domain"
+    hosts: clients
+    become: yes
+    gather_facts: yes
+    roles:
+            - samba-client
+    tags: infra_setup
+
+  - name: "Configurate monitoring server"
+    hosts: 172.16.10.3
+    become: yes
+    gather_facts: yes
+    roles:
+            - grafana_setup
+    tags: infra_setup
+
+  - name: "Configurate Node_Exporter"
+    hosts: monitored
+    become: yes
+    gather_facts: yes
+    roles:
+            - node_exporter_setup
+    tags: infra_setup
+
+
+
+

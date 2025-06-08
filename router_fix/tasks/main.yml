@@ -1,0 +1,12 @@
+---
+# tasks file for router_fix
+      - name: "Changing the DNS server in the DHCP configuration"
+        template:
+          src: dhcpd.conf.j2
+          dest: /etc/dhcp/dhcpd.conf
+
+      - name: "Starting DHCP-server"
+        service:
+          name: dhcpd
+          enabled: yes
+          state: restarted

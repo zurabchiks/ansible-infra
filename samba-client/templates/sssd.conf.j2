@@ -1,0 +1,87 @@
+[sssd]
+domains = rtk.intra.net
+config_file_version = 2
+services = nss, pam
+
+# Фильтр re_expression
+# Должен использоваться совместно с параметром case_sensitive = False
+# Разрешены только символы нижнего регистра, цифры, точка "." и дефис "-". ps: при входе с @ утилита loginctl не определяет login.
+# re_expression = (?P<name>[a-z0-9._-]+)
+# Разрешены только символы нижнего регистра, цифры, точка "." и дефис "-", но запрещен символом "@" , т.е. формат username@domain
+# re_expression = (?P<name>[a-z0-9._-]+(?![@]))
+#
+
+
+[domain/rtk.intra.net]
+ad_domain = rtk.intra.net
+ad_server = dc1.rtk.intra.net
+krb5_realm = RTK.INTRA.NET
+case_sensitive = False
+realmd_tags = manages-system joined-with-samba
+
+# Параметр применяется, когда субъекты поддомена используются с upnSuffixes(UPN-суффиксы), которые неизвестны в KDC родительского домена.
+# SSSD попытается отправить запрос непосредственно в KDC доверенного домена.
+#krb5_use_subdomain_realm=True
+
+# Кэширование аутентификационных данных, необходимо при недоступности домена
+cache_credentials = True
+
+# Параметр указывает, что SSSD будет автоматически обновлять пароль учетной записи машины в Active Directory.
+ad_update_samba_machine_account_password = true
+
+id_provider = ad
+access_provider = ad
+krb5_store_password_if_offline = True
+default_shell = /bin/bash
+ldap_id_mapping = True
+ad_gpo_access_control = disabled
+dns_resolver_timeout = 10
+
+# Включает/Отключает режим полных имён пользователей при входе
+use_fully_qualified_names = False
+
+# Определение домашнего каталога для доменных пользователей
+fallback_homedir = /home/%u@%d
+
+# Параметр access_provider = simple Определяет список доступа на основе имен пользователей или групп.
+#access_provider = simple
+#simple_allow_users = user1@example.com, user2@example.com
+#simple_allow_groups = group@example.com
+
+# Включает/Отключает перечисление всех записей домена, операция(id или getent) может занимать длительное время при enumerate = true в больших инфраструктурах
+enumerate = false
+
+# Параметр ignore_group_members может ускорить авторизацию в домене если домен имеет большое количество пользователей, групп и вложенных OU
+# Если установлено значение TRUE, то атрибут членства в группе не запрашивается с сервера ldap и не обрабатывается вызовов поиска группы.
+# ignore_group_members = True
+
+# Поиск ссылок может привести к снижению производительности в средах, которые их интенсивно используют.
+# true - не рекомендуется для больших инфраструктур. Отключаем этот поиск.
+ldap_referrals = false
+
+# Включает/Отключает динамические обновления DNS, если в статусе sssd ошибка "TSIG error with server: tsig verify failure", то установите dyndns_update = false
+dyndns_update = true
+dyndns_refresh_interval = 43200
+dyndns_update_ptr = true
+dyndns_ttl = 3600
+
+# Описание dyndns_auth
+# dyndns_auth = GSS-TSIG - при динамической регистрации DNS адреса требуется аутентификация на сервере DNS.
+# dyndns_auth = none - при динамической регистрации DNS адреса не требуется аутентификация на сервере DNS (На DNS-сервере установлена политика "Nonsecure and secure")
+dyndns_auth = GSS-TSIG
+
+# Срок действия билета истекает каждые 24ч и его можно непрерывно продлевать в течение 7 дней
+krb5_lifetime = 24h
+
+# Самопродление тикета, значение определяет максимальное время жизни тикета
+# Эти параметры позволят SSSD запрашивать возобновляемые билеты (с максимальным сроком действия 7 дней) при входе в систему
+# и периодически просматривать список билетов для продления возобновляемых билетов каждые 300 секунд.
+krb5_renewable_lifetime = 7d
+krb5_renew_interval = 300s
+
+[nss]
+# Сколько секунд nss_sss должен кэшировать перечисления (запросы информации обо всех пользователях) Default: 120
+#entry_cache_timeout = 15
+# Задает время в секундах, в течение которого список поддоменов будет считаться действительным. Default: 60
+#get_domains_timeout = 10
+

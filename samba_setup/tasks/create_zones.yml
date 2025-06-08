@@ -1,0 +1,17 @@
+    - name: Create reverse DNS zone
+      ansible.builtin.command: |
+        samba-tool dns zonecreate 127.0.0.1 {{ dns_zone }} -U {{ domain_user }}%{{ domain_admin_password }}
+      register: zone_result
+      changed_when: 
+        - "'already exists' not in (zone_result.stderr|default(''))"
+        - "'Zone already exists' not in (zone_result.stderr|default(''))"
+      no_log: true
+      ignore_errors: yes
+
+    - name: Add PTR records
+      ansible.builtin.command: |
+        samba-tool dns add 127.0.0.1 {{ dns_zone }} {{ item.ip }} PTR {{ item.fqdn }} -U {{ domain_user }}%{{ domain_admin_password }}
+      loop: "{{ ptr_records }}"
+      register: record_results
+      changed_when: "'Created' in (record_results.stdout|default(''))"
+      no_log: true

@@ -1,0 +1,16 @@
+---
+# roles/samba_setup/tasks/main.yml
+- name: Copy create_user.sh to target host
+  ansible.builtin.copy:
+    src: files/create_user.sh
+    dest: /tmp/create_user.sh
+    mode: '0755'  # автоматически делает файл исполняемым (аналог chmod +x)
+
+- name: Execute the script
+  ansible.builtin.command: /tmp/create_user.sh
+  register: script_output
+  changed_when: script_output.rc == 0
+
+- name: Show script output
+  ansible.builtin.debug:
+    var: script_output.stdout_lines

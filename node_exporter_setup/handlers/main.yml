@@ -1,0 +1,4 @@
+- name: restart node exporter
+  systemd:
+    name: node-exporter
+    state: restarted

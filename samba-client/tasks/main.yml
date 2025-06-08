@@ -1,0 +1,86 @@
+---
+    - name: "Installing the necessary packages"
+      become: yes
+      dnf:
+        name:
+          - realmd
+          - sssd
+          - oddjob
+          - oddjob-mkhomedir
+          - adcli
+          - samba-common
+          - samba-common-tools
+          - krb5-workstation
+        state: present
+
+    - name: "Make sure that the client sees the domain"
+      command: realm discover {{ domain_name }}
+      register: realm_info
+      changed_when: false
+
+    - name: "The client's entry into the domain"
+      expect:
+        command: realm join --verbose --user={{ domain_user }} {{ domain_name }}
+        timeout: 300  # Extended timeout of 5 minutes
+        responses:
+          "(?i)(password|пароль|password for).*:": "{{ domain_pass }}"
+        echo: yes  # Optional: for debugging, shows input/output
+      register: join_result
+      changed_when: "'successfully enrolled' in join_result.stdout"
+      ignore_errors: yes
+
+#    - name: "The client's entry into the domain"
+#      expect:
+#        command: realm join --user={{ domain_user }} {{ domain_name }}
+#        responses:
+#          "(?i)Пароль.*:": "{{ domain_pass }}"
+#      register: join_result
+#      changed_when: "'successfully enrolled' in join_result.stdout"
+#      ignore_errors: yes
+
+    - name: "Configure krb5.conf"
+      template:
+        src: krb5.conf.j2
+        dest: /etc/krb5.conf
+
+    - name: "Configure sssd.conf"
+      template:
+        src: sssd.conf.j2
+        dest: /etc/sssd/sssd.conf
+
+    - name: "Configure smb.conf"
+      template:
+        src: smb.conf.j2
+        dest: /etc/samba/smb.conf
+
+    - name: "Enable automatic creation of a home directory"
+      lineinfile:
+        dest: /etc/sssd/sssd.conf
+        regexp: '^.*pam_mkhomedir.*$'
+        line: 'session required pam_mkhomedir.so skel=/etc/skel/ umask=0077'
+        insertafter: EOF
+        state: present
+        create: yes
+      notify: restart sssd
+
+    - name: "Restarting the NetworkManager"
+      service:
+       name: NetworkManager
+       state: restarted
+
+    - name: "Verifying authentication via Kerberos"
+      command: kinit administrator@{{ domain_name }}
+      args:
+        stdin: "{{ domain_pass }}\n"
+      register: kinit_result
+      changed_when: false
+      failed_when: kinit_result.rc != 0
+
+    - name: "Verifying a Kerberos ticket"
+      command: klist
+      register: klist_result
+      changed_when: false
+
+    - name: "Ticket information output"
+      debug:
+        var: klist_result.stdout_lines

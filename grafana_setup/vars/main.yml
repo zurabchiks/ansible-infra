@@ -1,0 +1,9 @@
+---
+# vars file for grafana_setup
+# Для первого варианта
+node_exporter_ip: "172.16.10.3"
+
+# Для второго варианта
+node_exporters:
+  - { name: "router", ip: "172.16.10.1" }
+  - { name: "dc1-server", ip: "172.16.10.2" }
