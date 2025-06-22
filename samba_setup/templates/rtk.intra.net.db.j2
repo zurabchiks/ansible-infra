@@ -1,0 +1,14 @@
+$TTL 1D
+@		IN	SOA	{{ domain_name }}. root.{{ domain_name }}. (
+					0	; serial
+					1D	; refresh
+					1H	; retry
+					1W	; expire
+					3H )	; minimum
+		IN	NS	{{ domain_name }}.
+		IN	A	{{ dns_listen_ip }}
+{{ host_rtr }}	IN	A	{{ ip_addreses_rtr }}
+{{ host_dc }}	IN	A	{{ ip_addreses_dc }}
+{{ host_ms }}	IN	A	{{ ip_addreses_ms }}
+{{ host_cli1 }}	IN	A	{{ ip_addreses_cli1 }}
+{{ host_cli2 }}	IN	A	{{ ip_addreses_cli2 }}
